@@ -1,56 +1,85 @@
-import { nanoid } from 'nanoid';
-//Create local Tasks
-let tasks = [
-  { id: nanoid(), title: 'apple', description: 'front-end' , isComplete: false},
-  { id: nanoid(), title: 'google', description: 'back-end', isComplete: false},
-];
+
+import pool from '../config/db.js'
+import { StatusCodes } from 'http-status-codes';
 
 export const getAllTasks = async (req, res) => {
-  res.status(200).json({ tasks });
+  const response = await pool.query('SELECT * FROM tasks');
+  res.status(StatusCodes.OK).json(response.rows);
 };
 
 export const createTask = async  (req, res) => {
-  const {title, description, isComplete} = req.body;
-  if(!title ||!description ){
-    return res.status(400).json({error: 'Please provide title and description'});
+  req.body.user_id = req.user.userId;
+  const { title, description, isComplete, user_id } = req.body;
+  const result = await pool.query(
+    `INSERT INTO tasks 
+     (title, description,is_complete, user_id) 
+     VALUES ($1, $2, $3, $4) 
+     RETURNING *`,
+    [title, description, isComplete || false, user_id]
+  );
+  console.log(result);
+  res.status(StatusCodes.CREATED).json({
+      message: 'Task Added Successfully',
+      body:{
+          task:{ title, description, isComplete, user_id }
+      }
+  });
   }
-  const id = nanoid(10);
-  const task = {id, title, description,  isComplete: isComplete ?? false, };
-  tasks.push(task);
-  res.status(200).json({ tasks });
-};
 
 export const getTask = async (req, res) => {
   const { id } = req.params;
-  const task = tasks.find((task) => task.id === id);
-  if (!task) {
-    return res.status(404).json({ msg: `no Task with id ${id}` });
-  }
-  res.status(200).json({ task });
+  const response = await pool.query('SELECT * FROM tasks WHERE id = $1',[id]);
+    res.status(StatusCodes.OK).json(response.rows);
 };
 
 export const updateTask = async (req,res)=>{
-  const {title, description, isComplete} = req.body;
-  if(!title ||!description){
-    return res.status(400).json({error: 'Please provide title and description'});
-  }
   const { id } = req.params;
-  const task = tasks.find((task)=>task.id===id);
-  if (!task) {
-    return res.status(404).json({ msg: `no Task with id ${id}` });
-  }
-  task.title = title;
-  task.description = description;
-  if(isComplete) task.isComplete = isComplete;
-  res.status(200).json({ mesg:'Task modified', task });
+    const { title, description, isComplete } = req.body;
+    const updateFields = [];
+    const values = [];
+    let paramCounter = 1;
+    if (title !== undefined) {
+      updateFields.push(`title = $${paramCounter}`);
+      values.push(title);
+      paramCounter++;
+    }
+    if (description !== undefined) {
+      updateFields.push(`description = $${paramCounter}`);
+      values.push(description);
+      paramCounter++;
+    }
+    
+    if (isComplete !== undefined) {
+      updateFields.push(`is_complete = $${paramCounter}`);
+      values.push(isComplete);
+      paramCounter++;
+    }
+
+    updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+    if (updateFields.length === 0) {
+      return res.status(StatusCodes.BAD_REQUEST).json({ error: 'No fields to update' });
+    }
+    values.push(id);
+    const query = `
+      UPDATE tasks 
+      SET ${updateFields.join(', ')} 
+      WHERE id = $${paramCounter}
+      RETURNING *
+    `;
+    
+    const result = await pool.query(query, values);
+    if (result.rowCount === 0) {
+      return res.status(StatusCodes.NOT_FOUND).json({ error: `No task found with id ${id}` });
+    }
+    res.status(StatusCodes.OK).json({ 
+      message: 'Task updated successfully', 
+      task: result.rows[0] 
+    });
 };
 
 export const deleteTask = async (req, res) => {
-  const { id } = req.params;
-  const index = tasks.findIndex((task) => task.id === id);
-  if (index === -1) {
-    return res.status(404).json({ msg: `no task with id ${id}` });
-  }
-  tasks.splice(index, 1);
-  res.status(200).json({ msg:'Task deleted', tasks });
+  const id = req.params.id;
+  const response = await pool.query('DELETE FROM tasks WHERE id = $1',[id]);
+  console.log(response);
+  res.status(StatusCodes.OK).json(`Task ${id} deleted successfully`);
 };
