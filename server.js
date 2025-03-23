@@ -10,6 +10,7 @@ import errorHandlerMiddleware from './middleware/errorHandlerMiddleware.js';
 import { authenticateUser } from './middleware/authMiddleware.js';
 // Database Setup
 import { initializeTable, setupDatabase } from './config/db.js';
+
 setupDatabase()
   .then(() => initializeTable())
   .catch(error => console.error('Database initialization failed:', error));
@@ -24,6 +25,10 @@ if (process.env.NODE_ENV === 'development') {
 }
 app.use(express.json());
 app.use(cookieParser());
+app.get('/api/v1/test', (req, res) => {
+  res.json({ msg: 'test route' });
+});
+
 app.get('/', (req, res) => {
   res.send('Hello World');
 });
@@ -47,7 +52,7 @@ app.use((err, req, res) => {
 })
 
 
-const port = process.env.PORT || 888;
-app.listen(888, () => {
+const port = process.env.PORT || 5101;
+app.listen(5101, () => {
   console.log(`server running on PORT ${port}....`);
 });
