@@ -1,8 +1,4 @@
-# Full-Stack Coding Challenge
-
-**Deadline**: Sunday, Feb 23th 11:59 pm PST
-
----
+# Task Manager
 
 ## Overview
 
@@ -15,14 +11,20 @@ Create a “Task Management” application with **React + JavaScript** (frontend
    - **Update an existing task** (e.g., mark complete, edit).
    - **Delete a task**.
 
----
-
 ## Set Up
 
 - `npm install` to install dependencies
 - `npm run dev` to run the server
 
-### 3. Frontend (React + TypeScript)
+## Database Instructions
+
+After database has been setup, can use the following commands to check the database from your local terminal;
+
+- `psql task_manager`
+- `\dt` to list all tables in the database.
+- `SELECT * FROM tasks` or `SELECT * FROM users`
+
+### WIP: Frontend (React + JavaScript)
 
 - **Login / Register**:
   - Simple forms for **Register** and **Login**.
